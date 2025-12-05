@@ -4,7 +4,8 @@ from flask import Flask, render_template, jsonify, request, send_file
 from core.traffic_engine import TrafficEngine
 from datetime import datetime
 import json
-from io import BytesIO
+import csv
+from io import BytesIO, StringIO
 
 # Initialize App
 app = Flask(__name__)
@@ -64,7 +65,6 @@ def process_ip_range():
         return jsonify(status), 400
 
     # Add the results to the main buffer to see them on the Monitor page
-    # This also helps persist the data so the results table can be populated
     with engine.lock:
         for packet in packets:
             engine.packet_buffer.append(packet)
@@ -79,23 +79,18 @@ def process_ip_range():
         "count": len(packets)
     })
 
-# --- NEW FEATURE: Export API ---
+# --- Export JSON API ---
 @app.route('/api/export_packets', methods=['GET'])
 def export_packets():
     packets = engine.get_packets()
     if not packets:
-        # Returns 404 which is handled by the JS client to show an alert
         return jsonify({"message": "No packets in buffer to export."}), 404
         
-    # Serialize the packet data to a JSON string
     data_to_export = json.dumps(packets, indent=4)
-    
-    # Create an in-memory buffer for the file
     buffer = BytesIO()
     buffer.write(data_to_export.encode('utf-8'))
-    buffer.seek(0) # Rewind the buffer to the start
+    buffer.seek(0)
 
-    # Use send_file to send the data as a downloadable JSON file
     return send_file(
         buffer,
         as_attachment=True,
@@ -103,11 +98,37 @@ def export_packets():
         mimetype='application/json'
     )
 
+# --- NEW FEATURE: Export CSV API ---
+@app.route('/api/export_packets_csv', methods=['GET'])
+def export_packets_csv():
+    packets = engine.get_packets()
+    if not packets:
+        return jsonify({"message": "No packets in buffer to export."}), 404
+        
+    # Define the fields for the CSV header (must match keys in the packet dictionary)
+    fieldnames = ['id', 'timestamp', 'source', 'destination', 'protocol', 'port', 'length', 'severity', 'type', 'is_successful', 'rule_hit', 'ml_score', 'info']
+
+    # Use StringIO to build the CSV in memory
+    output = StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore') # ignore extra fields if any
+    
+    writer.writeheader()
+    writer.writerows(packets)
+    
+    # Create an in-memory buffer for the file
+    buffer = BytesIO(output.getvalue().encode('utf-8'))
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f'sentinel-export-{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
+        mimetype='text/csv'
+    )
+
 
 if __name__ == '__main__':
     # SSL Context for HTTPS
-    # Ensure cert.pem and key.pem exist in 'certs/' folder
-    # Note: If running locally, you must run gen_certs.py first.
     context = ('certs/cert.pem', 'certs/key.pem')
     
     # Start the traffic engine automatically on server start
