@@ -90,15 +90,41 @@ class TrafficEngine:
             src_ip = "192.168.1." + str(random.randint(10, 254))
             dst_ip = random.choice(["10.0.0.5", "172.16.0.8", "8.8.8.8", "192.168.1.1"])
             
+            # --- START NEW SIMULATION LOGIC FOR ATTACK TRAFFIC ---
+            rule_hit = False
+            ml_score = 0.0
+            is_successful = False
+            
             if is_attack and protocol in ["HTTP", "HTTPS"]:
                 attack = random.choice(ATTACK_SIGNATURES)
                 info = f"{protocol} GET {attack['url']}"
                 alert_type = attack['type']
-                severity = attack['risk']
+                
+                # SIMULATION: Hybrid Detection Logic
+                # Simulate a strong rule hit for known signatures (80% chance)
+                if attack['risk'] in ["CRITICAL", "HIGH"] and random.random() < 0.8:
+                    rule_hit = True
+                    ml_score = random.uniform(0.90, 0.99) # High confidence
+                else:
+                    ml_score = random.uniform(0.60, 0.95) # ML score for obfuscated/novel
+
+                # Determine Severity based on simulated hybrid result
+                if rule_hit or ml_score > 0.95:
+                    severity = "CRITICAL"
+                elif ml_score > 0.80:
+                    severity = "HIGH"
+                else:
+                    severity = "MEDIUM"
+                    
+                # SIMULATION: Successful Attack Segregation (30% chance for high risk to be successful)
+                if severity in ["CRITICAL", "HIGH"] and random.random() < 0.3:
+                    is_successful = True
+                
             else:
                 info = f"{protocol} GET {random.choice(COMMON_URLS)}" if protocol in ["HTTP", "HTTPS"] else f"{protocol} CMD: {random.choice(['Query', 'Request', 'SYN'])}"
                 alert_type = "Normal"
                 severity = "Low"
+                # is_successful is already False
 
             packet = {
                 "id": id_counter,
@@ -110,7 +136,10 @@ class TrafficEngine:
                 "length": random.randint(64, 1500),
                 "info": info,
                 "type": alert_type,
-                "severity": severity
+                "severity": severity,
+                "is_successful": is_successful, # <-- NEW FIELD
+                "rule_hit": rule_hit,          # <-- NEW FIELD
+                "ml_score": ml_score           # <-- NEW FIELD
             }
 
             with self.lock:
@@ -145,11 +174,34 @@ class TrafficEngine:
             # 30% chance of a high-severity event in a targeted range
             is_attack = is_targeted_range and random.random() < 0.30
             
+            rule_hit = False
+            ml_score = 0.0
+            is_successful = False
+
             if is_attack:
                 attack = random.choice(ATTACK_SIGNATURES)
                 info = f"TARGETED SCAN: {attack['url']} (Attempting {attack['type']})"
-                severity = attack['risk']
+                
+                # SIMULATION: Hybrid Detection Logic for IPDR
+                if attack['risk'] in ["CRITICAL", "HIGH"] and random.random() < 0.7:
+                    rule_hit = True
+                    ml_score = random.uniform(0.85, 0.98)
+                else:
+                    ml_score = random.uniform(0.70, 0.90)
+
+                if rule_hit or ml_score > 0.95:
+                    severity = "CRITICAL"
+                elif ml_score > 0.80:
+                    severity = "HIGH"
+                else:
+                    severity = "MEDIUM"
+                
                 alert_type = attack['type']
+                
+                # SIMULATION: Successful Attack Segregation
+                if severity == "CRITICAL" and random.random() < 0.4:
+                    is_successful = True
+                    
             else:
                 info = f"IPDR Record: Normal connection established."
                 severity = random.choice(["Low", "Medium"]) if is_targeted_range else "Low"
@@ -165,7 +217,10 @@ class TrafficEngine:
                 "length": random.randint(100, 1000),
                 "info": info,
                 "type": alert_type,
-                "severity": severity
+                "severity": severity,
+                "is_successful": is_successful, # <-- NEW FIELD
+                "rule_hit": rule_hit,
+                "ml_score": ml_score
             }
             generated_packets.append(packet)
 
