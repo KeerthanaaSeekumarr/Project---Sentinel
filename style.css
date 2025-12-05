@@ -1,33 +1,32 @@
 :root {
     --bg-dark: #0d1117;
     --bg-panel: #161b22;
-    --bg-deep-dark: #07090b; /* New variable for deeper background */
+    --bg-deep-dark: #07090b;
     --text-primary: #c9d1d9;
     --text-secondary: #8b949e;
     --accent: #58a6ff;
     
     /* Severity Colors */
-    --critical-red: #f85149; /* Red for CRITICAL */
-    --high-orange: #f0883e;  /* Orange for HIGH */
-    --medium-yellow: #d29922; /* Yellow for MEDIUM */
-    --low-green: #3fb950;    /* Green for LOW */
+    --critical-red: #f85149;
+    --high-orange: #f0883e;
+    --medium-yellow: #d29922;
+    --low-green: #3fb950;
 
     --border: #30363d;
-    /* Professionalism variable for a subtle glow */
-    --hover-glow: rgba(88, 166, 255, 0.6); /* Enhanced glow intensity */
-    --input-focus-glow: rgba(88, 166, 255, 0.8); /* New variable for input focus */
+    --hover-glow: rgba(88, 166, 255, 0.6);
+    --input-focus-glow: rgba(88, 166, 255, 0.8);
 }
 
 body {
     margin: 0;
-    /* FONT CHANGE: Replaced 'Roboto Mono' with 'Inter' */
     font-family: 'Inter', sans-serif; 
-    background: var(--bg-deep-dark); /* Use the slightly darker background */
+    background: var(--bg-deep-dark); 
     color: var(--text-primary);
     font-size: 14px;
-    /* Added subtle noise texture for a professional, cyber look */
     background-image: radial-gradient(circle at center, rgba(88, 166, 255, 0.03) 1px, transparent 1px);
     background-size: 50px 50px;
+    height: 100vh; /* Ensure full height */
+    overflow: hidden; /* Control scroll on main content */
 }
 a {
     text-decoration: none;
@@ -48,7 +47,6 @@ a {
     flex-direction: column;
 }
 .logo {
-    /* FONT CHANGE: Using Inter Bold for professionalism */
     font-family: 'Inter', sans-serif; 
     font-weight: 600; 
     font-size: 1.5rem;
@@ -74,21 +72,18 @@ a {
 .sidebar ul li a i {
     margin-right: 10px;
 }
-/* ENHANCED Hover effect for navigation links (more slide and scale) */
 .sidebar ul li a:hover {
     color: var(--text-primary);
     background: #1f252f; 
     border-left-color: var(--accent);
-    /* More pronounced slide and subtle glow on hover */
     transform: translateX(8px); 
     box-shadow: 5px 0 15px rgba(88, 166, 255, 0.3);
 }
 .sidebar ul li a.active {
     color: var(--text-primary);
     background: #1f252f;
-    /* PROFESSIONALISM CHANGE: Use accent color for active link indicator */
     border-left-color: var(--accent); 
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.5); /* Stronger indicator glow */
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
 }
 .system-status {
     padding: 20px;
@@ -113,11 +108,10 @@ a {
     flex-grow: 1;
     padding: 20px;
     overflow-y: auto;
-    display: flex; /* Set to flex to push footer to bottom */
+    display: flex;
     flex-direction: column;
 }
 h1 {
-    /* FONT CHANGE: Using Inter Bold */
     font-family: 'Inter', sans-serif;
     font-weight: 700;
     font-size: 1.8rem;
@@ -132,26 +126,21 @@ h2 {
     margin-top: 0;
 }
 
-/* Card Styling (Core Session Element) */
+/* Card Styling */
 .card {
     background: var(--bg-panel);
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 20px;
-    /* Add a subtle initial shadow/border to prevent jump on hover */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); 
     border: 1px solid var(--border); 
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
 }
-
-/* ENHANCED: Universal Hover effect for all session cards (Higher lift, stronger glow) */
-/* FIX: Increased specificity for metric and feature cards to ensure hover works correctly */
 .card:hover, .card.metric:hover, .card.feature-card:hover { 
     background: #1a2027; 
-    /* More complex, dramatic shadow/glow for interaction */
     box-shadow: 0 15px 50px rgba(0, 0, 0, 1), 0 0 30px var(--hover-glow); 
-    transform: translateY(-8px) scale(1.005); /* Higher lift effect with minor scale */
-    border-color: var(--low-green); /* Use low-green for 'secure' hover border */
+    transform: translateY(-8px) scale(1.005);
+    border-color: var(--low-green);
     cursor: pointer; 
 }
 
@@ -170,7 +159,6 @@ h2 {
     margin-bottom: 5px;
 }
 .metric p {
-    /* FONT CHANGE: Using Inter Bold */
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 2.5rem;
@@ -215,10 +203,8 @@ h2 {
     color: var(--text-primary);
     transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
-/* ENHANCED: Hover effect for Monitor table rows (Brighter background, thicker accent) */
 #packetTable tbody tr:hover {
     background-color: #1c232c; 
-    /* Subtle 3D-like hover lift */
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), inset 5px 0 0 var(--low-green); 
     transform: translateY(-1px);
     cursor: pointer;
@@ -228,11 +214,22 @@ h2 {
     font-weight: bold;
     background: #201a22; 
 }
-/* Ensure malicious row hover is also distinct */
 #packetTable tbody tr.row-malicious:hover {
-    background-color: #351f1f !important; /* Brighter red-tinged background on hover */
-    /* Malicious hover uses critical red accent */
+    background-color: #351f1f !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), inset 5px 0 0 var(--critical-red);
+    transform: translateY(-1px);
+}
+
+/* NEW: Style for Confirmed Successful Exploit */
+#packetTable tbody tr.row-successful-exploit {
+    color: #ffb703; /* Yellow/gold */
+    font-weight: bold;
+    background: #28201a; 
+    border: 1px solid var(--high-orange);
+}
+#packetTable tbody tr.row-successful-exploit:hover {
+    background-color: #3e2e1e !important; 
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), inset 5px 0 0 #ffb703;
     transform: translateY(-1px);
 }
 
@@ -248,7 +245,7 @@ h2 {
     padding: 10px;
     margin-bottom: 15px;
     border: 1px solid var(--border);
-    background: var(--bg-panel); /* Changed to panel color for better blending */
+    background: var(--bg-panel);
     color: var(--text-primary);
     border-radius: 4px;
     font-family: inherit;
@@ -258,7 +255,6 @@ h2 {
 .text-input:focus, select.text-input:focus {
     outline: none;
     border-color: var(--accent);
-    /* Stronger, more professional focus glow */
     box-shadow: 0 0 10px var(--input-focus-glow);
 }
 .processor-results pre {
@@ -291,7 +287,6 @@ h2 {
     padding-bottom: 5px;
     border-bottom: 1px solid var(--border);
     color: var(--low-green);
-    /* FONT CHANGE: Using Inter Bold */
     font-family: 'Inter', sans-serif;
     font-weight: 600;
 }
@@ -304,12 +299,12 @@ h2 {
     cursor: pointer;
     font-family: inherit;
     font-weight: 500;
-    transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother transition */
+    transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 .btn:hover {
-    opacity: 1; /* Keep full opacity */
-    transform: translateY(-4px) scale(1.05); /* Higher lift and subtle scale for urgency */
+    opacity: 1;
+    transform: translateY(-4px) scale(1.05);
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.6), 0 0 10px var(--hover-glow); 
 }
 .btn-green {
@@ -336,7 +331,6 @@ h2 {
 }
 .log-list li {
     padding: 10px;
-    /* border-left color is set dynamically by JS for severity */
     background: #1c2128;
     margin-bottom: 5px;
     border-radius: 4px;
@@ -345,11 +339,10 @@ h2 {
     justify-content: space-between;
     transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; 
 }
-/* ENHANCED: Hover effect for Log List items (stronger glow/background) */
 .log-list li:hover {
-    background: #252c34 !important; /* Brighter background */
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.3); /* Stronger, accent-colored glow */
-    transform: translateX(3px); /* Subtle slide for interaction */
+    background: #252c34 !important;
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+    transform: translateX(3px);
     cursor: pointer;
 }
 .log-list li strong {
@@ -360,7 +353,7 @@ h2 {
 /* New Footer Styling */
 .app-footer {
     padding: 15px 20px;
-    margin-top: 30px; /* Add separation from content */
+    margin-top: 30px;
     border-top: 1px solid var(--border);
     text-align: center;
     color: var(--text-secondary);
@@ -368,7 +361,7 @@ h2 {
     background: var(--bg-panel);
     opacity: 0.7;
     transition: opacity 0.3s;
-    flex-shrink: 0; /* Prevents footer from shrinking */
+    flex-shrink: 0;
 }
 .app-footer:hover {
     opacity: 1;
@@ -376,14 +369,41 @@ h2 {
 
 /* Added style for professional header icons */
 .card h1 i, .card h2 i {
-    color: var(--low-green); /* Use the subtle green for icons in h1/h2 */
+    color: var(--low-green);
     margin-right: 10px;
-    filter: drop-shadow(0 0 5px rgba(63, 185, 80, 0.5)); /* Subtle icon glow */
+    filter: drop-shadow(0 0 5px rgba(63, 185, 80, 0.5));
 }
 
-/* NEW: Dragover Style for Processor.html */
+/* Dragover Style for Processor.html */
 .drop-zone.dragover {
     border-color: var(--critical-red);
-    background: rgba(248, 81, 73, 0.1); /* Critical red glow when dragging over */
+    background: rgba(248, 81, 73, 0.1);
     transform: scale(1.01);
+}
+
+/* Added styles for About page */
+.icon-large {
+    font-size: 3rem;
+    display: block;
+    transition: transform 0.3s ease;
+}
+.feature-card:hover .icon-large {
+    transform: rotateY(15deg) scale(1.05);
+}
+.tech-list {
+    list-style: none;
+    padding: 0;
+}
+.tech-list li {
+    padding: 8px 0;
+    border-bottom: 1px dotted var(--border);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+.tech-list li:last-child {
+    border-bottom: none;
+}
+.tech-icon {
+    margin-right: 10px;
+    color: var(--accent);
 }
