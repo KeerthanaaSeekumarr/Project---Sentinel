@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel-X Defense Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fas fa-shield-virus"></i> Sentinel-X
+            </div>
+            <ul>
+                <li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/monitor" class="{% if request.path == '/monitor' %}active{% endif %}"><i class="fas fa-network-wired"></i> Network Monitor</a></li>
+                <li><a href="/processor" class="{% if request.path == '/processor' %}active{% endif %}"><i class="fas fa-file-code"></i> File Processor</a></li>
+                <li><a href="/about" class="{% if request.path == '/about' %}active{% endif %}"><i class="fas fa-info-circle"></i> About Sentinel</a></li>
+            </ul>
+            <div class="system-status">
+                <span class="indicator active"></span> System Secure
+            </div>
+        </nav>
+        <main class="content">
+            {% block content %}{% endblock %}
+            <footer class="app-footer">
+                &copy; Ethic secura 2025. All rights reserved.
+            </footer>
+        </main>
+    </div>
+    <script src="/static/js/dashboard.js"></script>
+    <script>
+        // Simple client-side path check for active link state (if not using Flask context variables for active state)
+        document.querySelectorAll('.sidebar a').forEach(link => {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>

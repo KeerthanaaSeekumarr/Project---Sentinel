@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="panel-header">
+    <h1><i class="fas fa-satellite-dish"></i> Traffic Analyzer</h1>
+    <div class="controls">
+        <button onclick="controlTraffic('start')" class="btn btn-green"><i class="fas fa-play"></i> Start Capture</button>
+        <button onclick="controlTraffic('stop')" class="btn btn-red"><i class="fas fa-stop"></i> Stop</button>
+        <button onclick="controlTraffic('clear')" class="btn btn-grey" style="margin-right: 10px;"><i class="fas fa-trash"></i> Clear</button>
+        <button onclick="exportPackets()" class="btn btn-accent"><i class="fas fa-download"></i> Export JSON</button>
+    </div>
+</div>
+
+<div class="card no-padding">
+    <div class="table-container">
+        <table id="packetTable">
+            <thead>
+                <tr>
+                    <th width="5%">No.</th>
+                    <th width="10%">Time</th>
+                    <th width="15%">Source</th>
+                    <th width="15%">Destination</th>
+                    <th width="10%">Protocol</th>
+                    <th width="35%">Request / Payload (Simulated URL)</th>
+                    <th width="10%">Severity</th>
+                </tr>
+            </thead>
+            <tbody id="packetBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

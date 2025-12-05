@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Security Dashboard</h1>
+<div class="grid-3">
+    <div class="card metric">
+        <h3>Packets Analyzed</h3>
+        <p id="totalPackets">0</p>
+    </div>
+    <div class="card metric warning">
+        <h3>Threats Detected</h3>
+        <p id="totalThreats">0</p>
+    </div>
+    <div class="card metric">
+        <h3>Active Protocol</h3>
+        <p>Mixed (HTTP/FTP)</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2><i class="fas fa-bug"></i> Recent Alerts (High/Critical)</h2>
+    <ul id="alertList" class="log-list">
+        <li><i class="fas fa-check-circle" style="color: var(--green);"></i> System nominal. Waiting for traffic generation...</li>
+    </ul>
+</div>
+{% endblock %}

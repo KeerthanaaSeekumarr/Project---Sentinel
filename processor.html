@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h1><i class="fas fa-file-code"></i> File Processor</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 25px;">
+        Analyze network data from simulated PCAP/IPDR files or define an IP range for focused investigation.
+    </p>
+</div>
+
+<div class="card">
+    <h2><i class="fas fa-upload"></i> Simulated Dataset Loader</h2>
+    
+    <div class="drop-zone" id="file-drop-zone">
+        <i class="fas fa-file-export fa-3x" style="color: var(--text-secondary); margin-bottom: 10px;"></i>
+        <p style="margin: 0; color: var(--text-secondary);">Drag and drop a file here, or use the **Select File** button below to simulate loading a dataset.</p>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;">This simulates loading a predefined `PCAP` or `IPDR` dataset for analysis.</p>
+    </div>
+
+    <div style="display: flex; gap: 15px; align-items: flex-start; margin-bottom: 20px; margin-top: 15px;">
+        
+        <div style="width: 25%;">
+            <label for="actual-file-input" class="input-label">Select File</label>
+            <label for="actual-file-input" class="btn btn-grey" id="select-file-label" style="width: 100%; text-align: center; height: 40px; line-height: 20px; padding: 10px 0; margin-top: 5px;">
+                <i class="fas fa-file-import"></i> Select File...
+            </label>
+            <input type="file" id="actual-file-input" style="display: none;">
+        </div>
+        
+        <div style="width: 20%;">
+            <label for="file_type_select" class="input-label">File Type</label>
+            <select id="file_type_select" class="text-input" style="width: 100%; margin-top: 5px; margin-bottom: 0;">
+                <option value="pcap">PCAP</option>
+                <option value="ipdr">IPDR</option>
+            </select>
+        </div>
+
+        <div style="flex-grow: 1;">
+            <label for="file_input" class="input-label">File Name (Source)</label>
+            <input type="text" id="file_input" class="text-input" value="" placeholder="No file loaded. Drop or select a file." readonly style="width: 100%; background: var(--bg-dark); margin-top: 5px; margin-bottom: 0;">
+        </div>
+        
+        <div>
+            <label class="input-label" style="opacity: 0;">.</label> <button onclick="simulateFileUpload()" class="btn btn-grey" id="upload-btn" disabled style="height: 40px; margin-right: 0; margin-top: 5px;">
+                <i class="fas fa-cogs"></i> Analyze
+            </button>
+        </div>
+    </div>
+
+    <div style="text-align: right; margin-top: -10px; margin-bottom: 10px;">
+        <button onclick="loadSampleData()" class="btn btn-red" style="padding: 8px 15px; font-size: 0.95rem;">
+            <i class="fas fa-vial"></i> Load Critical Sample Data
+        </button>
+    </div>
+
+    <p class="text-secondary" style="font-size: 0.85rem; color: var(--text-secondary);">
+        *Note: This is a simulation. A predefined set of mock packets will be generated based on the file type selected and added to the live buffer.
+    </p>
+</div>
+
+
+<div class="card">
+    <h2><i class="fas fa-filter"></i> IP Range Analysis Simulation</h2>
+    
+    <div class="ip-range-form" style="display: flex; gap: 20px; align-items: flex-end;">
+        <div style="flex-grow: 1;">
+            <label for="start_ip" class="input-label">Start IP Address (e.g., 192.168.1.1)</label>
+            <input type="text" id="start_ip" placeholder="e.g. 192.168.1.1" class="text-input" value="192.168.1.1" style="width: 100%;">
+        </div>
+        <div style="flex-grow: 1;">
+            <label for="end_ip" class="input-label">End IP Address (e.g., 192.168.1.255)</label>
+            <input type="text" id="end_ip" placeholder="e.g. 192.168.1.255" class="text-input" value="192.168.1.255" style="width: 100%;">
+        </div>
+        <div>
+            <button onclick="processIpRange()" class="btn btn-accent" id="analyze-range-btn" style="height: 40px; margin-right: 0;">
+                <i class="fas fa-search"></i> Analyze Range
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="loading-indicator" class="loading-indicator" style="display: none;">
+    <i class="fas fa-spinner fa-spin"></i> Analyzing data... Please wait.
+</div>
+
+<div id="error-message" class="error-message" style="display: none;">
+    </div>
+
+<div class="card" id="analysis-results-card" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2><i class="fas fa-flask"></i> Analysis Results (<span id="result-count">0</span> Packets)</h2>
+        <button onclick="exportPackets()" class="btn btn-grey btn-small"><i class="fas fa-download"></i> Export JSON</button> 
+    </div>
+    <p id="analysis-message" style="color: var(--low-green); margin-bottom: 15px;"></p>
+    
+    <div class="table-container">
+        <table id="analysis-table">
+            <thead>
+                <tr>
+                    <th width="15%">Time</th>
+                    <th width="15%">Source IP</th>
+                    <th width="15%">Dest IP</th>
+                    <th width="10%">Protocol</th>
+                    <th width="35%">Info / Payload</th>
+                    <th width="10%">Severity</th>
+                </tr>
+            </thead>
+            <tbody id="analysis-table-body">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+
+<style>
+    /* Specific styles for the Processor page aesthetics */
+    .input-label {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--text-secondary);
+        font-size: 0.9em;
+    }
+    .text-input {
+        background: var(--bg-panel); /* Adjusted for consistency with style.css */
+        border: 1px solid var(--border);
+        padding: 8px 12px;
+        border-radius: 4px;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 1em;
+        transition: border-color 0.2s;
+    }
+    .text-input:focus {
+        border-color: var(--accent);
+        outline: none;
+    }
+    .loading-indicator {
+        text-align: center;
+        padding: 20px;
+        color: var(--accent);
+        font-size: 1.2rem;
+    }
+    .error-message {
+        background: rgba(232, 77, 77, 0.15);
+        border: 1px solid var(--critical-red);
+        padding: 15px;
+        margin-top: 20px;
+        border-radius: 6px;
+        color: var(--critical-red);
+        font-weight: bold;
+    }
+    
+    /* NEW FEATURE STYLES */
+    .drop-zone {
+        border: 2px dashed var(--border);
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(22, 27, 34, 0.4); 
+    }
+    .drop-zone:hover {
+        border-color: var(--accent);
+        background: rgba(88, 166, 255, 0.1);
+    }
+    .btn-small {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+</style>
+
+<script>
+    // Note: The exportPackets() function is available here from dashboard.js
+    
+    // Helper to control the state of the Analyze button and Select File label
+    function updateAnalysisButtonState() {
+        const fileInput = document.getElementById('file_input');
+        const analyzeBtn = document.getElementById('upload-btn');
+        const selectFileLabel = document.getElementById('select-file-label');
+        const fileName = fileInput.value.trim();
+
+        if (fileName === '' || fileName.includes('No file loaded.')) {
+            // Disable and set to grey if no file
+            analyzeBtn.disabled = true;
+            analyzeBtn.classList.remove('btn-green');
+            analyzeBtn.classList.add('btn-grey');
+            selectFileLabel.classList.remove('btn-green');
+            selectFileLabel.classList.add('btn-grey');
+        } else {
+            // Enable and set to green if file is present
+            analyzeBtn.disabled = false;
+            analyzeBtn.classList.remove('btn-grey');
+            analyzeBtn.classList.add('btn-green');
+            selectFileLabel.classList.remove('btn-grey');
+            selectFileLabel.classList.add('btn-green');
+        }
+    }
+
+    // Helper to render the results table
+    function renderResults(packets, message) {
+        const tbody = document.getElementById('analysis-table-body');
+        const resultCount = document.getElementById('result-count');
+        const analysisMessage = document.getElementById('analysis-message');
+        const resultsCard = document.getElementById('analysis-results-card');
+
+        // Hide error messages when results are displayed
+        document.getElementById('error-message').style.display = 'none';
+
+        // Helper function for severity class (to maintain consistency with monitor.html and style.css)
+        const getRowClass = (severity) => severity !== 'Low' ? 'row-malicious' : '';
+        
+        tbody.innerHTML = packets.map(p => `
+            <tr class="${getRowClass(p.severity)}">
+                <td>${p.timestamp}</td>
+                <td>${p.source}</td>
+                <td>${p.destination}</td>
+                <td>${p.protocol}</td>
+                <td>${p.info}</td>
+                <td class="severity-${p.severity}">${p.severity}</td>
+            </tr>
+        `).join('');
+
+        resultCount.innerText = packets.length;
+        analysisMessage.innerText = message;
+        resultsCard.style.display = 'block';
+    }
+
+    // NEW FEATURE: Function to load predefined critical sample data
+    function loadSampleData() {
+        const fileInput = document.getElementById('file_input');
+        // Set inputs to a known 'attack' file to trigger high-risk simulation logic
+        fileInput.value = 'critical_exploit_dump.pcap';
+        document.getElementById('file_type_select').value = 'pcap';
+        
+        updateAnalysisButtonState();
+        simulateFileUpload();
+    }
+
+
+    // ENHANCED: Placeholder function for the restored file upload feature (Simulated Dataset Loader)
+    function simulateFileUpload() {
+        const fileInput = document.getElementById('file_input');
+        const fileName = fileInput.value.trim();
+        
+        // 🟢 FIX 1: Enforce file loading
+        if (fileName === '' || fileName.includes('No file loaded.')) {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.innerText = 'Error: Please select, drop, or load a sample file to begin analysis.';
+            errorMsg.style.display = 'block';
+            document.getElementById('analysis-results-card').style.display = 'none';
+            return;
+        }
+
+        const fileType = document.getElementById('file_type_select').value;
+        const loading = document.getElementById('loading-indicator');
+        const errorMsg = document.getElementById('error-message');
+        errorMsg.style.display = 'none';
+        loading.style.display = 'block';
+
+        // Simulate a successful analysis result (1.5s delay)
+        setTimeout(() => {
+            loading.style.display = 'none';
+            
+            const dummyPackets = [];
+            // Logic to simulate different preset datasets based on file name
+            const isAttackFile = fileName.toLowerCase().includes('attack') || fileName.toLowerCase().includes('exploit') || fileName.toLowerCase().includes('critical');
+            const packetCount = 20 + Math.floor(Math.random() * 10); // 20-29 packets
+            const attackProbability = isAttackFile ? 0.4 : 0.1; // Higher chance of threats if 'attack' is in the name
+
+            for (let i = 1; i <= packetCount; i++) {
+                let severity = 'Low';
+                let info = `Simulated ${fileType.toUpperCase()} Record.`;
+                let type = 'Normal';
+                
+                if (Math.random() < attackProbability) {
+                    const attackTypes = ['SQL Injection', 'XSS Attempt', 'Buffer Overflow', 'Zero-Day Exploit', 'URL SPOOFING', 'CREDENTIAL STUFFING'];
+                    const riskLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+                    
+                    type = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+                    // Adjust probability for severity to match the 'preset' logic
+                    if (Math.random() < 0.2) {
+                        severity = 'CRITICAL';
+                    } else if (Math.random() < 0.5) {
+                        severity = 'HIGH';
+                    } else {
+                        severity = 'MEDIUM';
+                    }
+
+                    info = `ALERT (${type}): Detected suspicious ${fileType.toUpperCase()} pattern for file: ${fileName}`;
+                }
+
+                dummyPackets.push({
+                    id: i,
+                    timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+                    source: `192.168.${Math.floor(Math.random() * 5)}.${i % 254 + 1}`,
+                    destination: `10.0.${Math.floor(Math.random() * 5)}.${i % 254 + 1}`,
+                    protocol: fileType.toUpperCase(),
+                    info: info,
+                    severity: severity,
+                    type: type
+                });
+            }
+
+            const message = `Successfully analyzed ${packetCount} records from simulated ${fileType.toUpperCase()} file: ${fileName}.`;
+            renderResults(dummyPackets, message);
+
+        }, 1500);
+    }
+    
+    // Function for IP Range Analysis (Existing Feature - untouched logic)
+    async function processIpRange() {
+        const startIp = document.getElementById('start_ip').value;
+        const endIp = document.getElementById('end_ip').value;
+        
+        const loading = document.getElementById('loading-indicator');
+        const errorMsg = document.getElementById('error-message');
+        const resultsCard = document.getElementById('analysis-results-card');
+
+        resultsCard.style.display = 'none';
+        errorMsg.style.display = 'none';
+        loading.style.display = 'block';
+
+        try {
+            const res = await fetch('/api/process_ip_range', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ start_ip: startIp, end_ip: endIp })
+            });
+
+            const data = await res.json();
+            loading.style.display = 'none';
+
+            if (data.error) {
+                errorMsg.innerText = `Error: ${data.error}`;
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            renderResults(data.results, data.message);
+
+        } catch (e) {
+            loading.style.display = 'none';
+            errorMsg.innerText = 'An unknown error occurred during API communication.';
+            errorMsg.style.display = 'block';
+            console.error("IP Range API Error:", e);
+        }
+    }
+
+    // JAVASCRIPT: Logic for drag-and-drop and file selection simulation
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropZone = document.getElementById('file-drop-zone');
+        const fileInput = document.getElementById('file_input');
+        const fileTypeSelect = document.getElementById('file_type_select');
+        const actualFileInput = document.getElementById('actual-file-input');
+
+        // Initial state update
+        updateAnalysisButtonState();
+
+        // Prevent default drag behaviors everywhere on the page
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.body.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        // Add visual feedback to the specific drop zone
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        // Handle file selection via button (NEW FEATURE)
+        actualFileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const fileName = this.files[0].name;
+                const extension = fileName.split('.').pop().toLowerCase();
+                
+                // 1. Set file type based on extension (or default to pcap if unknown)
+                if (extension === 'ipdr') {
+                    fileTypeSelect.value = 'ipdr';
+                } else {
+                    fileTypeSelect.value = 'pcap'; // Default to pcap
+                }
+
+                // 2. Populate the display field
+                fileInput.value = fileName;
+
+                // 3. Update button state
+                updateAnalysisButtonState();
+
+                // 4. Immediately trigger the analysis function
+                simulateFileUpload();
+            }
+        });
+
+
+        // Handle dropped files (simulation)
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            // Prevent default behavior
+            e.preventDefault();
+            e.stopPropagation();
+
+            let simulatedFileName = '';
+            
+            // Attempt to get the actual file name from the drop event
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                simulatedFileName = e.dataTransfer.files[0].name;
+            } else {
+                // Fallback to random simulation if actual file info is blocked
+                simulatedFileName = 'dropped_file_' + Math.floor(Math.random() * 999);
+                simulatedFileName += (Math.random() < 0.5) ? '.pcap' : '.ipdr';
+            }
+
+            // Determine file type from the name and set the select box
+            const extension = simulatedFileName.split('.').pop().toLowerCase();
+            if (extension === 'ipdr') {
+                 fileTypeSelect.value = 'ipdr';
+            } else {
+                 fileTypeSelect.value = 'pcap';
+            }
+
+            // 1. Populate the text input field
+            fileInput.value = simulatedFileName;
+            
+            // 2. Update button state
+            updateAnalysisButtonState();
+            
+            // 3. Immediately trigger the analysis function
+            simulateFileUpload();
+        }
+    });
+</script>
+{% endblock %}
