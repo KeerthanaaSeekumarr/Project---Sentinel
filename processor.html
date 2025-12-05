@@ -89,7 +89,10 @@
 <div class="card" id="analysis-results-card" style="display: none;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h2><i class="fas fa-flask"></i> Analysis Results (<span id="result-count">0</span> Packets)</h2>
-        <button onclick="exportPackets()" class="btn btn-grey btn-small"><i class="fas fa-download"></i> Export JSON</button> 
+        <div class="results-controls">
+            <button onclick="exportPackets('json')" class="btn btn-grey btn-small"><i class="fas fa-download"></i> Export JSON</button>
+            <button onclick="exportPackets('csv')" class="btn btn-grey btn-small" style="margin-left: 5px;"><i class="fas fa-table"></i> Export CSV</button>
+        </div>
     </div>
     <p id="analysis-message" style="color: var(--low-green); margin-bottom: 15px;"></p>
     
@@ -210,16 +213,29 @@
         // Helper function for severity class (to maintain consistency with monitor.html and style.css)
         const getRowClass = (severity) => severity !== 'Low' ? 'row-malicious' : '';
         
-        tbody.innerHTML = packets.map(p => `
-            <tr class="${getRowClass(p.severity)}">
-                <td>${p.timestamp}</td>
-                <td>${p.source}</td>
-                <td>${p.destination}</td>
-                <td>${p.protocol}</td>
-                <td>${p.info}</td>
-                <td class="severity-${p.severity}">${p.severity}</td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = packets.map(p => {
+            const isSuccessful = p.is_successful === true;
+            let rowClass = getRowClass(p.severity);
+            
+            // Use special class for successful exploit
+            if (isSuccessful) {
+                rowClass = 'row-successful-exploit'; 
+            }
+            
+            // Append SUCCESS indicator
+            const successText = isSuccessful ? ' (SUCCESS)' : '';
+            
+            return `
+                <tr class="${rowClass}">
+                    <td>${p.timestamp}</td>
+                    <td>${p.source}</td>
+                    <td>${p.destination}</td>
+                    <td>${p.protocol}</td>
+                    <td>${p.info} ${successText}</td>
+                    <td class="severity-${p.severity}">${p.severity}</td>
+                </tr>
+            `;
+        }).join('');
 
         resultCount.innerText = packets.length;
         analysisMessage.innerText = message;
@@ -243,7 +259,6 @@
         const fileInput = document.getElementById('file_input');
         const fileName = fileInput.value.trim();
         
-        // 🟢 FIX 1: Enforce file loading
         if (fileName === '' || fileName.includes('No file loaded.')) {
             const errorMsg = document.getElementById('error-message');
             errorMsg.innerText = 'Error: Please select, drop, or load a sample file to begin analysis.';
@@ -272,21 +287,32 @@
                 let severity = 'Low';
                 let info = `Simulated ${fileType.toUpperCase()} Record.`;
                 let type = 'Normal';
+                let is_successful = false;
+                let rule_hit = false;
+                let ml_score = 0.0;
                 
                 if (Math.random() < attackProbability) {
                     const attackTypes = ['SQL Injection', 'XSS Attempt', 'Buffer Overflow', 'Zero-Day Exploit', 'URL SPOOFING', 'CREDENTIAL STUFFING'];
-                    const riskLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
                     
                     type = attackTypes[Math.floor(Math.random() * attackTypes.length)];
-                    // Adjust probability for severity to match the 'preset' logic
-                    if (Math.random() < 0.2) {
+                    
+                    // SIMULATED HYBRID LOGIC
+                    rule_hit = Math.random() < 0.7;
+                    ml_score = Math.random() * 0.4 + 0.6; // Score between 0.6 and 1.0
+
+                    if (rule_hit || ml_score > 0.95) {
                         severity = 'CRITICAL';
-                    } else if (Math.random() < 0.5) {
+                    } else if (ml_score > 0.8) {
                         severity = 'HIGH';
                     } else {
                         severity = 'MEDIUM';
                     }
 
+                    // SIMULATED SUCCESS LOGIC
+                    if (severity === 'CRITICAL' && Math.random() < 0.3) {
+                         is_successful = true;
+                    }
+                    
                     info = `ALERT (${type}): Detected suspicious ${fileType.toUpperCase()} pattern for file: ${fileName}`;
                 }
 
@@ -298,7 +324,10 @@
                     protocol: fileType.toUpperCase(),
                     info: info,
                     severity: severity,
-                    type: type
+                    type: type,
+                    is_successful: is_successful, 
+                    rule_hit: rule_hit,
+                    ml_score: ml_score
                 });
             }
 
@@ -374,7 +403,7 @@
             dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
         });
 
-        // Handle file selection via button (NEW FEATURE)
+        // Handle file selection via button
         actualFileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
                 const fileName = this.files[0].name;
