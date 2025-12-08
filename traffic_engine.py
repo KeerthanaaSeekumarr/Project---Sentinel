@@ -161,18 +161,31 @@ class TrafficEngine:
         if start_ip > end_ip:
             return {"error": "Start IP must be less than or equal to End IP."}, []
 
-        generated_packets = []
-        
-        # Determine if the range is small enough to be interesting
-        is_targeted_range = (int(end_ip) - int(start_ip)) < 100
+        # Use IP range as seed for consistent results
+        seed_value = int(start_ip) + int(end_ip)
+        random.seed(seed_value)
 
-        for i in range(count):
-            # Generate a random IP within the range
-            random_ip_int = random.randint(int(start_ip), int(end_ip))
+        # Define full IP space for simulation
+        FULL_RANGE_START = IPv4Address("192.168.0.1")
+        FULL_RANGE_END = IPv4Address("192.168.10.254")
+        TOTAL_PACKETS = random.randint(500, 1000)
+
+        all_generated_packets = []
+
+        for i in range(TOTAL_PACKETS):
+            # Generate IP from FULL range, not user's range
+            random_ip_int = random.randint(int(FULL_RANGE_START), int(FULL_RANGE_END))
             src_ip = str(IPv4Address(random_ip_int))
-            
-            # 30% chance of a high-severity event in a targeted range
-            is_attack = is_targeted_range and random.random() < 0.30
+
+            # Check if generated IP is in user's specified range
+            src_ip_obj = IPv4Address(src_ip)
+            is_in_user_range = start_ip <= src_ip_obj <= end_ip
+
+            # Concentrated attack distribution
+            if is_in_user_range:
+                is_attack = random.random() < 0.50  # 50% attack rate in user's range
+            else:
+                is_attack = random.random() < 0.10  # 10% attack rate outside
             
             rule_hit = False
             ml_score = 0.0
@@ -204,7 +217,7 @@ class TrafficEngine:
                     
             else:
                 info = f"IPDR Record: Normal connection established."
-                severity = random.choice(["Low", "Medium"]) if is_targeted_range else "Low"
+                severity = random.choice(["Low", "Medium"]) if is_in_user_range else "Low"
                 alert_type = "IPDR"
 
             packet = {
@@ -222,7 +235,25 @@ class TrafficEngine:
                 "rule_hit": rule_hit,
                 "ml_score": ml_score
             }
-            generated_packets.append(packet)
+            all_generated_packets.append(packet)
 
-        message = f"Successfully generated {count} simulated IPDR records for range {start_ip_str} to {end_ip_str}."
-        return {"message": message, "status": "success"}, generated_packets
+        # Filter packets by user's IP range
+        filtered_packets = [
+            p for p in all_generated_packets
+            if start_ip <= IPv4Address(p['source']) <= end_ip
+        ]
+
+        # Reset IDs for filtered packets
+        for idx, packet in enumerate(filtered_packets):
+            packet['id'] = idx + 1
+
+        # Reset random seed to prevent affecting other random operations
+        random.seed()
+
+        message = f"Found {len(filtered_packets)} records in range {start_ip_str} - {end_ip_str} (from {len(all_generated_packets)} total)"
+        return {
+            "message": message,
+            "status": "success",
+            "total_generated": len(all_generated_packets),
+            "filtered_count": len(filtered_packets)
+        }, filtered_packets
