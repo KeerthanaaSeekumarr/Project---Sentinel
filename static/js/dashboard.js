@@ -111,6 +111,8 @@ async function updatePackets() {
                         <td>${p.protocol}</td>
                         <td>${p.info}</td>
                         <td class="severity-${p.severity}">${p.severity} ${successIcon}</td>
+                        <td class="detection-cell">${renderDetectionBadge(p)}</td>
+                        <td class="ml-score-cell">${renderMLScore(p)}</td>
                     </tr>
                 `;
             }).join('');
@@ -184,11 +186,50 @@ async function updatePackets() {
 // Start the continuous packet updates when the page loads
 function startUpdates() {
     // Run once immediately
-    updatePackets(); 
+    updatePackets();
     // Set up interval (e.g., every 1 second)
     if (!intervalId) {
         intervalId = setInterval(updatePackets, 1000);
     }
+}
+
+// Helper function to render detection badges
+function renderDetectionBadge(packet) {
+    let badges = [];
+
+    if (packet.rule_hit) {
+        badges.push('<span class="badge badge-rule">Rule</span>');
+    }
+
+    if (packet.ml_score > 0.60) {
+        badges.push('<span class="badge badge-ml">ML</span>');
+    }
+
+    if (badges.length === 0) {
+        return '<span class="badge badge-none">-</span>';
+    }
+
+    return badges.join(' ');
+}
+
+// Helper function to render ML score bar
+function renderMLScore(packet) {
+    const score = packet.ml_score || 0;
+    const percentage = (score * 100).toFixed(1);
+
+    // Color based on score
+    let colorClass = 'low';
+    if (score > 0.95) colorClass = 'critical';
+    else if (score > 0.80) colorClass = 'high';
+    else if (score > 0.60) colorClass = 'medium';
+
+    return `
+        <div class="ml-score-container">
+            <div class="ml-score-bar ml-score-${colorClass}"
+                 style="width: ${percentage}%"></div>
+            <span class="ml-score-text">${percentage}%</span>
+        </div>
+    `;
 }
 
 window.onload = startUpdates;

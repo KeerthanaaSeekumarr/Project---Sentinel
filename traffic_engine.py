@@ -10,6 +10,7 @@ from datetime import datetime
 from ipaddress import IPv4Address
 from typing import Optional, Tuple, List, Dict
 from repository import PacketRepository
+from detection.hybrid_detector import HybridDetector
 
 
 # Enhanced Attack Signatures
@@ -227,6 +228,7 @@ class TrafficEngine:
         self.stop_event = threading.Event()
         self.thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
+        self.hybrid_detector = HybridDetector()  # Initialize hybrid detection engine
 
     @property
     def is_running(self) -> bool:
@@ -281,28 +283,25 @@ class TrafficEngine:
         rule_hit = False
         ml_score = 0.0
         is_successful = False
+        detection_method = "None"
 
         if is_attack and protocol in ["HTTP", "HTTPS"]:
             attack = random.choice(ATTACK_SIGNATURES)
             info = f"{protocol} GET {attack['url']}"
-            alert_type = attack["type"]
 
-            # SIMULATION: Hybrid Detection Logic
-            if attack["risk"] in ["CRITICAL", "HIGH"] and random.random() < 0.8:
-                rule_hit = True
-                ml_score = random.uniform(0.90, 0.99)
-            else:
-                ml_score = random.uniform(0.60, 0.95)
+            # REAL HYBRID DETECTION: Use the hybrid detector for real analysis
+            detection_result = self.hybrid_detector.analyze_packet(info, protocol)
 
-            # Determine Severity based on simulated hybrid result
-            if rule_hit or ml_score > 0.95:
-                severity = "CRITICAL"
-            elif ml_score > 0.80:
-                severity = "HIGH"
-            else:
-                severity = "MEDIUM"
+            # Extract detection results
+            rule_hit = detection_result['rule_hit']
+            ml_score = detection_result['ml_score']
+            severity = detection_result['severity']
+            detection_method = detection_result['detection_method']
 
-            # SIMULATION: Successful Attack Segregation
+            # Use detected attack type (may be different from the simulated one if obfuscated)
+            alert_type = detection_result['attack_type']
+
+            # Successful Attack Segregation (30% for CRITICAL/HIGH)
             if severity in ["CRITICAL", "HIGH"] and random.random() < 0.3:
                 is_successful = True
         else:
@@ -326,6 +325,7 @@ class TrafficEngine:
             "is_successful": is_successful,
             "rule_hit": rule_hit,
             "ml_score": ml_score,
+            "detection_method": detection_method,
         }
 
     def generate_simulated_ipdr_data(
